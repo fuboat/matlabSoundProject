@@ -1,25 +1,27 @@
 function demodulator_FSK
-global f0_a_s
-global f1_a_s
 global lastx
 global x
 global f0
 global f1
 
 global start_demodulator
+global allcodes
+
+global last_impulse_f0
+global last_impulse_f1
+
+allcodes = [];
+last_impulse_f0 = [];
+last_impulse_f1 = [];
 
 start_demodulator = 0;
 
 sampleRate = 48000;
-windows_size = 256;
+windows_size = 512;
 f0 = 20000;
-f1 = 21000;
+f1 = 18000;
 
 aDR = audioDeviceReader(sampleRate);
-
-f0_a_s = zeros(windows_size) - 1;
-f1_a_s = zeros(windows_size) - 1;
-
 lastx = zeros(1,4096);
 
 while (1)
@@ -37,7 +39,7 @@ end
 
 function impulse = Get_y_impulse(f, y, fs)
 index_f = round(f/fs*size(y,2));
-impulse = max(y(1:end,index_f-2:index_f+2)')';
+impulse = max(y(1:end,index_f-3:index_f+3)')';
 end
 
 % function impulse = Get_impulse(f, samples, fs)
@@ -80,36 +82,63 @@ end
 %% 根据样本做fft，得到每个窗口的频谱图。
 ys = abs(fft(samples_matrix')');
 
+global last_impulse_f0
+global last_impulse_f1
+
 %% 获取各个窗口在频率 f0, f1 处的振幅
 impulse_f0 = Get_y_impulse(f0, ys, sampleRate);
 impulse_f1 = Get_y_impulse(f1, ys, sampleRate);
 
+last_impulse_f0 = [last_impulse_f0; impulse_f0];
+last_impulse_f1 = [last_impulse_f1; impulse_f1];
+
+if length(last_impulse_f0) > 16 * windows_size
+    last_impulse_f0 = last_impulse_f0(end-16*windows_size+1:end);
+    last_impulse_f1 = last_impulse_f1(end-16*windows_size+1:end);
+end
+
 %% 设置根据 impulse 判断 0/1 的规则，无法识别的置为 -1
-codes0 = impulse_f0 - 3 * impulse_f1;
-codes1 = impulse_f1 - 3 * impulse_f0;               
+
+l = 2;
+ri = 20;
+while ri - l > 0.01
+    mid = (l + ri) / 2;
+    codes0 = last_impulse_f0 - mid * last_impulse_f1;
+    codes1 = last_impulse_f1 - mid * last_impulse_f0;               
+    codes = 0 * (codes0 > 0) + 1 * (codes1 > 0) + (-1) * ((codes0 < 0) .* (codes1 < 0));
+
+    %% 将codes reshape 成一个矩阵，使得每一列为一个 id 所对应的所有 codes 
+    codes = reshape(codes, windows_size, [])';          % 分成各个 id 的 f0, f1 振幅
+    find_preamble_flag = find_preamble(codes, windows_size, sampleRate, 0);
+
+    v = max(max(find_preamble_flag));
+
+    if v == 8
+        l = mid;
+    else
+        ri = mid;
+    end
+end
+
+codes0 = last_impulse_f0 - l * last_impulse_f1;
+codes1 = last_impulse_f1 - l * last_impulse_f0;               
 codes = 0 * (codes0 > 0) + 1 * (codes1 > 0) + (-1) * ((codes0 < 0) .* (codes1 < 0));
 
 %% 将codes reshape 成一个矩阵，使得每一列为一个 id 所对应的所有 codes 
 codes = reshape(codes, windows_size, [])';          % 分成各个 id 的 f0, f1 振幅
-find_preamble_flag = find_preamble(codes, windows_size, sampleRate);
+find_preamble_flag = find_preamble(codes, windows_size, sampleRate, 1);
 
-pause(0.0001);
-
-v = max(max(find_preamble_flag));
-if v > 7
-    disp(v);
+if start_demodulator == 1
+last_impulse_f0 = [];
+last_impulse_f1 = [];
 end
+
 end
 
 %% 寻找前导码
-function find_preamble_flag = find_preamble(codes, windows_size, sampleRate)
-global allcodes
+function find_preamble_flag = find_preamble(allcodes, windows_size, sampleRate, auto_start_demodulator)
 global x
 
-if size(allcodes, 1) > 7
-    allcodes = allcodes(end-6:end, :);
-end
-allcodes = [allcodes;codes];
 codes = allcodes;
 
 find_preamble_flag = zeros(size(allcodes));
@@ -124,7 +153,8 @@ end
 [pr, pc] = find(find_preamble_flag == 8);
 
 % 如果存在位置能找到前导码
-if (length(pr) > 0)
+if (length(pr) > 0 && auto_start_demodulator)
+    disp("length of p = " + length(pr));
     if mod(length(pr), 2) == 0
         p = length(pr) / 2;
     else
@@ -201,12 +231,12 @@ end
 preamble = preamble(endi+windows_size:end);
 
 %% 根据01码得到长度码、编码信息
-if (length(code_after_preamble) > length_of_LengthCode)
-    length_to_recv = array_to_int(code_after_preamble(1:length_of_LengthCode));
-    if (length(code_after_preamble) > length_to_recv + length_of_LengthCode)
-        code_after_preamble = code_after_preamble(1:length_to_recv + length_of_LengthCode);
+if (length(code_after_preamble) > length_of_LengthCode + 8)
+    length_to_recv = array_to_int(code_after_preamble(9:length_of_LengthCode + 8));
+    if (length(code_after_preamble) > length_to_recv + length_of_LengthCode + 8)
+        code_after_preamble = code_after_preamble(1:length_to_recv + length_of_LengthCode + 8);
         disp("recv finished, length = " + length(code_after_preamble));
-        recv_code(code_after_preamble(11:end));
+        recv_code(code_after_preamble(19:end));
         clear_preamble();
     end
 end

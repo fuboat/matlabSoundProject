@@ -1,7 +1,7 @@
 function [allcode] = send_str(str)
 code = string2bin(str)';
 lengthCode = int2bin(length(code), 10);
-preamble = [0,1,0,1,0,1,0,1];
+preamble = [0,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1];
 allcode = [zeros(1,100), preamble, lengthCode, code, zeros(1,100)];
 modulator_FSK(allcode);
 end

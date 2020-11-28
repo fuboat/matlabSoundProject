@@ -1,8 +1,8 @@
 function data = modulator_FSK(codes)
 sampleRate = 48000;
-windows_size = 256;
+windows_size = 512;
 f0 = 20000;
-f1 = 21000;
+f1 = 18000;
 
 t = 0:1/sampleRate:1;
 t = t(1:windows_size);
