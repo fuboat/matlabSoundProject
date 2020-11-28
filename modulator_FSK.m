@@ -2,7 +2,7 @@ function data = modulator_FSK(codes)
 sampleRate = 48000;
 windows_size = 512;
 f0 = 20000;
-f1 = 18000;
+f1 = 22000;
 
 t = 0:1/sampleRate:1;
 
@@ -19,11 +19,9 @@ for i=1:length(codes)
     t = asin(lastA)/(2*pi*f):1/sampleRate:asin(lastA)/(2*pi*f)+1/sampleRate*(windows_size+1);
     t = t(1:windows_size);
     data((i-1)*windows_size+1:i*windows_size) = sin(2*pi*f*t);
-    disp(lastA + ":" + sin(2*pi*f*t(1)));
     lastA = sin((2*pi*f*(t(1)+windows_size/sampleRate)));
 end
 
 sound(data, sampleRate);
-plot(data);
 
 end

@@ -19,7 +19,7 @@ start_demodulator = 0;
 sampleRate = 48000;
 windows_size = 512;
 f0 = 20000;
-f1 = 18000;
+f1 = 22000;
 
 aDR = audioDeviceReader(sampleRate);
 lastx = zeros(1,4096);
@@ -155,11 +155,7 @@ end
 % 如果存在位置能找到前导码
 if (length(pr) > 0 && auto_start_demodulator)
     disp("length of p = " + length(pr));
-    if mod(length(pr), 2) == 0
-        p = length(pr) / 2;
-    else
-        p = (length(pr) + 1) / 2;
-    end
+    p = 1;
     r = pr(p);
     c = pc(p);
     offset_from_begin = (r - 1) * windows_size + c + 7 * windows_size;
