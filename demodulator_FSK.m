@@ -101,7 +101,7 @@ end
 
 l = 2;
 ri = 20;
-while ri - l > 0.01
+while ri - l > 0.005
     mid = (l + ri) / 2;
     codes0 = last_impulse_f0 - mid * last_impulse_f1;
     codes1 = last_impulse_f1 - mid * last_impulse_f0;               
