@@ -19,7 +19,8 @@ for i=1:length(codes)
     t = asin(lastA)/(2*pi*f):1/sampleRate:asin(lastA)/(2*pi*f)+1/sampleRate*(windows_size+1);
     t = t(1:windows_size);
     data((i-1)*windows_size+1:i*windows_size) = sin(2*pi*f*t);
-    lastA = sin(2*pi*f*t(windows_size));
+    disp(lastA + ":" + sin(2*pi*f*t(1)));
+    lastA = sin((2*pi*f*(t(1)+windows_size/sampleRate)));
 end
 
 sound(data, sampleRate);
