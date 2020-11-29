@@ -19,7 +19,7 @@ start_demodulator = 0;
 sampleRate = 48000;
 windows_size = 512;
 f0 = 20000;
-f1 = 22000;
+f1 = 18000;
 
 aDR = audioDeviceReader(sampleRate);
 lastx = zeros(1,4096);
