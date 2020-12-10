@@ -34,6 +34,8 @@ for i=1:length(codes)
     end
 end
 
+data = [data', zeros(length(data),1)];
+
 sound(data, sampleRate);
 audiowrite("sound.wav", data, sampleRate);
 
