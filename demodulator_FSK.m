@@ -5,33 +5,48 @@ global f0
 global f1
 
 global start_demodulator
+global start_demodulator_stamp
 global allcodes
 
 global last_impulse_f0
 global last_impulse_f1
+
+global string_send_back
+
+global sample_num_stamp
+
+string_send_back = '';
 
 allcodes = [];
 last_impulse_f0 = [];
 last_impulse_f1 = [];
 
 start_demodulator = 0;
+start_demodulator_stamp = 0;
 
 sampleRate = 48000;
-windows_size = 512;
+windows_size = 256;
 f0 = 20000;
-f1 = 22000;
+f1 = 18000;
+sample_num_stamp = 0;
 
 aDR = audioDeviceReader(sampleRate);
 lastx = zeros(1,4096);
 
 while (1)
     [x,numOverrun] = record(aDR);
+    if ~isempty(string_send_back)
+        send_str(string_send_back);
+        string_send_back = '';
+    end
     x = x';
     if (numOverrun ~= 0)
         disp(numOverrun + " bit sample overrun.");
     end
 
     update_decode_fast(windows_size, sampleRate);
+    
+    sample_num_stamp = sample_num_stamp + length(x);
     
     lastx = x;
 end
@@ -54,6 +69,7 @@ global x
 global f0
 global f1
 global start_demodulator
+global start_demodulator_stamp
     
 if start_demodulator
     demodulator_after_preamble(x, sampleRate, windows_size);
@@ -138,6 +154,8 @@ end
 %% 寻找前导码
 function find_preamble_flag = find_preamble(allcodes, windows_size, sampleRate, auto_start_demodulator)
 global x
+global start_demodulator_stamp
+global sample_num_stamp
 
 codes = allcodes;
 
@@ -160,6 +178,7 @@ if (length(pr) > 0 && auto_start_demodulator)
     c = pc(p);
     offset_from_begin = (r - 1) * windows_size + c + 7 * windows_size;
     offset_to_end = numel(allcodes) - offset_from_begin + 1;
+    start_demodulator_stamp = sample_num_stamp + length(x) - offset_to_end + 1;
     start_preamble();
     demodulator_after_preamble(x(end-offset_to_end+1:end), sampleRate, windows_size);
 end
@@ -200,6 +219,9 @@ global f0
 global f1
 global start_demodulator
 global length_of_LengthCode
+global sample_num_stamp
+global start_demodulator_stamp
+global x
 
 length_of_LengthCode = 10;
 
@@ -232,7 +254,7 @@ if (length(code_after_preamble) > length_of_LengthCode + 8)
     if (length(code_after_preamble) > length_to_recv + length_of_LengthCode + 8)
         code_after_preamble = code_after_preamble(1:length_to_recv + length_of_LengthCode + 8);
         disp("recv finished, length = " + length(code_after_preamble));
-        recv_code(code_after_preamble(19:end));
+        recv_code(code_after_preamble(19:end), sample_num_stamp + length(x) - start_demodulator_stamp);
         clear_preamble();
     end
 end
@@ -257,7 +279,10 @@ end
 end
 
 %% 接口函数。设置在收到码后做哪些事情
-function recv_code(code)
-    disp(bin2string(code));
+function recv_code(code, num_of_samples_during_recv)
+global string_send_back
+    str_recv = bin2string(code);
+    disp(str_recv);
+    disp("num of samples_during_recv" + num_of_samples_during_recv);
 end
 
