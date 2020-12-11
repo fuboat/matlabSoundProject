@@ -1,9 +1,8 @@
-function demodulator_FSK(MODE)
+function Copy_of_demodulator_FSK
 global lastx
 global x
 global f0
 global f1
-global mode
 
 global start_demodulator
 global start_demodulator_stamp
@@ -16,9 +15,7 @@ global string_send_back
 
 global sample_num_stamp
 
-mode = MODE;
-
-string_send_back = '';
+string_send_back = 'ToF';
 
 allcodes = [];
 last_impulse_f0 = [];
@@ -29,8 +26,8 @@ start_demodulator_stamp = 0;
 
 sampleRate = 48000;
 windows_size = 256;
-f0 = 16000;
-f1 = 12000;
+f0 = 20000;
+f1 = 18000;
 sample_num_stamp = 0;
 
 aDR = audioDeviceReader(sampleRate);
@@ -38,9 +35,9 @@ lastx = zeros(1,4096);
 
 while (1)
     [x,numOverrun] = record(aDR);
-    if ~isempty(string_send_back)
+    if ~isempty(string_send_back) && numOverrun == 0 && mod(sample_num_stamp, 204800) == 0
         send_str(string_send_back);
-        string_send_back = '';
+        string_send_back = 'ToF';
     end
     x = x';
     if (numOverrun ~= 0)
@@ -286,10 +283,7 @@ function recv_code(code, num_of_samples_during_recv)
 global string_send_back
     str_recv = bin2string(code);
     disp(str_recv);
-    if strcmp(mode, 'recv')
-        disp("[RECV mode] num of samples_during_recv" + num_of_samples_during_recv);
-        if strcmp(str_recv, 'ToF')
-            string_send_back = num2str(num_of_samples_during_recv);
-        end
-    end
+    disp("num of samples_during_recv" + num_of_samples_during_recv);
+    string_send_back = num2str(num_of_samples_during_recv);
 end
+
