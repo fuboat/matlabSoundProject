@@ -42,6 +42,11 @@ while (1)
         send_str(string_send_back);
         string_send_back = '';
     end
+    
+    if strcmp(mode, 'send') && numOverrun == 0 && mod(sample_num_stamp, 102400) == 0
+        send_str('ToF');
+    end
+    
     x = x';
     if (numOverrun ~= 0)
         disp(numOverrun + " bit sample overrun.");
