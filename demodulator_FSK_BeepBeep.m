@@ -1,8 +1,9 @@
-function Copy_of_demodulator_FSK
+function demodulator_FSK_BeepBeep(MODE)
 global lastx
 global x
 global f0
 global f1
+global mode
 
 global start_demodulator
 global start_demodulator_stamp
@@ -14,8 +15,13 @@ global last_impulse_f1
 global string_send_back
 
 global sample_num_stamp
+global send_TOF_tag_stamp
 
-string_send_back = 'ToF';
+global send_id
+
+mode = MODE;
+
+string_send_back = '';
 
 allcodes = [];
 last_impulse_f0 = [];
@@ -26,19 +32,29 @@ start_demodulator_stamp = 0;
 
 sampleRate = 48000;
 windows_size = 256;
-f0 = 20000;
-f1 = 18000;
+f0 = 16000;
+f1 = 12000;
 sample_num_stamp = 0;
+send_id = 0;
 
 aDR = audioDeviceReader(sampleRate);
 lastx = zeros(1,4096);
 
 while (1)
     [x,numOverrun] = record(aDR);
-    if ~isempty(string_send_back) && numOverrun == 0 && mod(sample_num_stamp, 204800) == 0
+    if ~isempty(string_send_back)
         send_str(string_send_back);
-        string_send_back = 'ToF';
+        string_send_back = '';
     end
+    
+    if strcmp(mode, 'send') && numOverrun == 0 && mod(sample_num_stamp, 204800) < 1024
+        send_id = send_id + 1;
+        send_TOF_tag_stamp = sample_num_stamp;
+        send_str([MODE, num2str(send_id)]);
+    end
+    
+    lengthx = length(x);
+    
     x = x';
     if (numOverrun ~= 0)
         disp(numOverrun + " bit sample overrun.");
@@ -47,6 +63,10 @@ while (1)
     update_decode_fast(windows_size, sampleRate);
     
     sample_num_stamp = sample_num_stamp + length(x);
+    if mod(length(x), 256) ~= 0
+        disp(length(x) + " vs " + length(x));
+        error('The length is not correct');
+    end
     
     lastx = x;
 end
@@ -172,7 +192,7 @@ end
 
 % 如果存在位置能找到前导码
 if (length(pr) > 0 && auto_start_demodulator)
-    disp("length of p = " + length(pr));
+    % disp("length of p = " + length(pr));
     p = 1;
     r = pr(p);
     c = pc(p);
@@ -280,10 +300,27 @@ end
 
 %% 接口函数。设置在收到码后做哪些事情
 function recv_code(code, num_of_samples_during_recv)
+global mode
 global string_send_back
+global start_demodulator_stamp
+global send_TOF_tag_stamp
     str_recv = bin2string(code);
-    disp(str_recv);
-    disp("num of samples_during_recv" + num_of_samples_during_recv);
-    string_send_back = num2str(num_of_samples_during_recv);
+    disp("str = "+ str_recv + ", start_demodulator_stamp = " + start_demodulator_stamp);
+    if strcmp(mode, 'recv')
+        disp("[RECV mode] num of samples_during_recv" + num_of_samples_during_recv);
+        if strcmp(str_recv, 'ToF')
+            string_send_back = num2str(num_of_samples_during_recv);
+        end
+    end
+    
+    if strcmp(mode, 'send') && ~isempty(str_recv)
+        time_during_recv = str2num(str_recv);
+        if ~isempty(time_during_recv)
+            delta = start_demodulator_stamp - send_TOF_tag_stamp - time_during_recv;
+            disp("start_demodulator_stamp = " + start_demodulator_stamp);
+            disp("send_TOF_tag_stamp = " + send_TOF_tag_stamp);
+            disp("time_during_recv = " + time_during_recv);
+            disp("delta = " + delta);
+        end
+    end
 end
-
