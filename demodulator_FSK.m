@@ -26,8 +26,8 @@ start_demodulator_stamp = 0;
 
 sampleRate = 48000;
 windows_size = 256;
-f0 = 20000;
-f1 = 18000;
+f0 = 16000;
+f1 = 12000;
 sample_num_stamp = 0;
 
 aDR = audioDeviceReader(sampleRate);
