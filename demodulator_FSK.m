@@ -283,6 +283,7 @@ end
 
 %% 接口函数。设置在收到码后做哪些事情
 function recv_code(code, num_of_samples_during_recv)
+global mode
 global string_send_back
     str_recv = bin2string(code);
     disp(str_recv);
