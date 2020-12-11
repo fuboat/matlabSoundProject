@@ -19,7 +19,6 @@ for i=1:length(codes)
         f = f1;
         next_t_begin = t1;
     end
-    % next_t_begin = 0;
     t = next_t_begin:1/sampleRate:next_t_begin+1/sampleRate*(windows_size+1);
     t = t(1:windows_size);
     data((i-1)*windows_size+1:i*windows_size) = sin(2*pi*f*t);
@@ -35,6 +34,4 @@ end
 data = [data', zeros(length(data),1)];
 
 sound(data, sampleRate);
-audiowrite("sound.wav", data, sampleRate);
-
 end
