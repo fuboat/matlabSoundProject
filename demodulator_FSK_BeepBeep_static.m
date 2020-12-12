@@ -45,8 +45,9 @@ send_id = 0;
 recObj = audiorecorder(sampleRate, 24, 1);
 
 disp('record start.');
-send_str(MODE);
-recordblocking(recObj, 5);
+record(recObj, 5);
+pause(pause_time_s);
+pause(5.1 - pause_time_s);
 recording_data = getaudiodata(recObj);
 disp('record finished. start analysis.');
 
