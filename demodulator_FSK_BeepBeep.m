@@ -47,7 +47,7 @@ while (1)
         string_send_back = '';
     end
     
-    if strcmp(mode, 'send') && numOverrun == 0 && mod(sample_num_stamp, 204800) < 1024
+    if (strcmp(mode, 'send') || strcmp(mode, 'recv')) && numOverrun == 0 && mod(sample_num_stamp, 409600) < 1024
         send_id = send_id + 1;
         send_TOF_tag_stamp = sample_num_stamp;
         send_str([MODE, num2str(send_id)]);
@@ -306,14 +306,14 @@ global start_demodulator_stamp
 global send_TOF_tag_stamp
     str_recv = bin2string(code);
     disp("str = "+ str_recv + ", start_demodulator_stamp = " + start_demodulator_stamp);
-    if strcmp(mode, 'recv')
-        disp("[RECV mode] num of samples_during_recv" + num_of_samples_during_recv);
-        if strcmp(str_recv, 'ToF')
-            string_send_back = num2str(num_of_samples_during_recv);
-        end
-    end
+%     if strcmp(mode, 'recv')
+%         disp("[RECV mode] num of samples_during_recv" + num_of_samples_during_recv);
+%         if strcmp(str_recv, 'ToF')
+%             string_send_back = num2str(num_of_samples_during_recv);
+%         end
+%     end
     
-    if strcmp(mode, 'send') && ~isempty(str_recv)
+    if (strcmp(mode, 'send') || strcmp(mode, 'recv')) && ~isempty(str_recv)
         time_during_recv = str2num(str_recv);
         if ~isempty(time_during_recv)
             delta = start_demodulator_stamp - send_TOF_tag_stamp - time_during_recv;
