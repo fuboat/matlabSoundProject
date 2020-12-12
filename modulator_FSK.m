@@ -1,7 +1,7 @@
-function data = modulator_FSK(codes)
+function data = modulator_FSK(codes, L_or_R)
 sampleRate = 48000;
 windows_size = 256;
-f0 = 16000;
+f0 = 10000;
 f1 = 12000;
 
 t = 0:1/sampleRate:1;
@@ -31,7 +31,11 @@ for i=1:length(codes)
     end
 end
 
-% data = [data', zeros(length(data),1)];
+if L_or_R == 1
+ data = [data', zeros(length(data),1)];
+else
+ data = [zeros(length(data),1), data'];
+end
 
 sound(data, sampleRate);
 end
