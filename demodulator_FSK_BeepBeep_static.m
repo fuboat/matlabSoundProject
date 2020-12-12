@@ -159,6 +159,7 @@ while ri - l > 0.005
 
     if v == 8
         l = mid;
+        disp(l);
     else
         ri = mid;
     end
