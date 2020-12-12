@@ -32,6 +32,6 @@ for i=1:length(codes)
 end
 
 % data = [data', zeros(length(data),1)];
-
+audiowrite('sound.wav', data, sampleRate);
 sound(data, sampleRate);
 end

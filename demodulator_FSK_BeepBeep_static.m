@@ -41,15 +41,10 @@ f1 = 12000;
 sample_num_stamp = 0;
 send_id = 0;
 
-
-recObj = audiorecorder(sampleRate, 24, 1);
-
-disp('record start.');
-record(recObj, 5);
-pause(pause_time_s);
-pause(5.1 - pause_time_s);
-recording_data = getaudiodata(recObj);
-disp('record finished. start analysis.');
+[recording_data, fs] = audioread('Aget.wav');
+disp(fs);
+recording_data = recording_data(:,1);
+plot(recording_data);
 
 lastx = zeros(1,4096);
 
