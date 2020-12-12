@@ -1,4 +1,4 @@
-function demodulator_FSK_BeepBeep(MODE)
+function demodulator_FSK_BeepBeep_static(MODE, pause_time_s)
 global lastx
 global x
 global f0
@@ -19,7 +19,11 @@ global send_TOF_tag_stamp
 
 global send_id
 
+global recording_data
+global cur_recording_index
+
 mode = MODE;
+cur_recording_index = 1;
 
 string_send_back = '';
 
@@ -37,38 +41,46 @@ f1 = 12000;
 sample_num_stamp = 0;
 send_id = 0;
 
-aDR = audioDeviceReader(sampleRate);
+
+recObj = audiorecorder(sampleRate, 24, 1);
+
+disp('record start.');
+send_str(MODE);
+recordblocking(recObj, 5);
+recording_data = getaudiodata(recObj);
+disp('record finished. start analysis.');
+
 lastx = zeros(1,4096);
 
 while (1)
-    [x,numOverrun] = record(aDR);
-    if ~isempty(string_send_back)
-        send_str(string_send_back);
-        string_send_back = '';
-    end
+    x = my_record();
     
-    if strcmp(mode, 'send') && numOverrun == 0 && mod(sample_num_stamp, 409600) < 1024
-        send_id = send_id + 1;
-        send_TOF_tag_stamp = sample_num_stamp;
-        send_str([MODE, num2str(send_id)]);
+    if isempty(x)
+        break;
     end
-    
+        
     lengthx = length(x);
     
     x = x';
-    if (numOverrun ~= 0)
-        disp(numOverrun + " bit sample overrun.");
-    end
 
     update_decode_fast(windows_size, sampleRate);
     
     sample_num_stamp = sample_num_stamp + length(x);
-    if mod(length(x), 256) ~= 0
-        disp(length(x) + " vs " + length(x));
-        error('The length is not correct');
-    end
-    
+
     lastx = x;
+end
+end
+
+function data=my_record()
+global recording_data
+global cur_recording_index
+
+right = cur_recording_index+1024-1;
+if right > length(recording_data)
+    data = [];
+else
+    data = recording_data(cur_recording_index:right);
+    cur_recording_index = cur_recording_index + 1024;
 end
 end
 
