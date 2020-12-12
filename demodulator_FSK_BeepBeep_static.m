@@ -1,4 +1,4 @@
-function demodulator_FSK_BeepBeep_static(MODE, pause_time_s)
+function demodulator_FSK_BeepBeep_static(MODE, pause_time_s, L_or_R)
 global lastx
 global x
 global f0
@@ -36,14 +36,27 @@ start_demodulator_stamp = 0;
 
 sampleRate = 48000;
 windows_size = 256;
-f0 = 16000;
+f0 = 10000;
 f1 = 12000;
 sample_num_stamp = 0;
 send_id = 0;
 
+
+recObj = audiorecorder(sampleRate, 24, 2);
+
+disp('record start.');
+% record(recObj, 5);
+% pause(pause_time_s);
+% send_str(MODE, L_or_R);
+% pause(5.1 - pause_time_s);
+% recording_data = getaudiodata(recObj);
+
 [recording_data, fs] = audioread('Aget.wav');
 disp(fs);
-recording_data = recording_data(:,1);
+
+recording_data = recording_data(:,2); % 只取一个声道的麦克风声音。
+disp('record finished. start analysis.');
+
 plot(recording_data);
 
 lastx = zeros(1,4096);
@@ -313,6 +326,7 @@ global mode
 global string_send_back
 global start_demodulator_stamp
 global send_TOF_tag_stamp
+global sample_num_stamp
     str_recv = bin2string(code);
     disp("str = "+ str_recv + ", start_demodulator_stamp = " + start_demodulator_stamp);
     if strcmp(mode, 'recv')
