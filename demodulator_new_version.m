@@ -1,10 +1,15 @@
 function [data_conved_0, data_conved_1] = demodulator_new_version(filename, fs, windows_size, f0, f1, premble_array, length_of_length_code)
     [data, ~] = audioread(filename);
-    data = data';
     
-    hd0 = design(fdesign.bandpass('N,F3dB1,F3dB2',6,min(f0,f1)-100,max(f0,f1)+100,fs),'butter');
-    % hd1 = design(fdesign.bandpass('N,F3dB1,F3dB2',6,f1-100,f1+100,fs),'butter');
-    data = filter(hd0,data);
+    data = data';
+    data = data(1,:);
+    
+    plot(data);
+    hold on;
+    
+%     hd0 = design(fdesign.bandpass('N,F3dB1,F3dB2',6,min(f0,f1)-100,max(f0,f1)+100,fs),'butter');
+%     hd1 = design(fdesign.bandpass('N,F3dB1,F3dB2',6,f1-100,f1+100,fs),'butter');
+%     data = filter(hd0,data);
     
 %     hd0 = design(fdesign.bandpass('N,F3dB1,F3dB2',6,f0-100,f0+100,fs),'butter');
 %     hd1 = design(fdesign.bandpass('N,F3dB1,F3dB2',6,f1-100,f1+100,fs),'butter');
@@ -49,22 +54,65 @@ function demodulator_data(data, fs, windows_size, f0, f1, premble_array, length_
     positions = flip(positions);
     
     disable_premble = zeros(1,length(data));
+        
+    positions_of_premble = [];
     
     for p_index=1:length(positions)
         p = positions(p_index);
         if ~disable_premble(p)
-            disable_premble(max(1,p-windows_size*2+1):min(p+windows_size*2-1,length(data))) = 1;
-            disp(p);
+            codes = demodulator_after_preamble(data(p:end), fs, windows_size, f0, f1, length(premble_array), length_of_length_code);
+            disable_premble(max(1,p-windows_size*length(premble_array)+1):p+length(codes)*windows_size-1) = 1;
+            positions_of_premble = [positions_of_premble, p];
+            % disp(p);
+            plot([p,p],[0,1],'m','linewidth',2);
+%            disp(bin2string(codes(length(premble_array) + length_of_length_code+1:end)));
+
+%             codes = demodulator_after_preamble(data(p:end), fs, windows_size, f0, f1, length(premble_array), length_of_length_code);
+%             str = bin2string(codes(length(premble_array) + length_of_length_code+1:end));
+%             if strcmp(str, 'send')
+%                 disp(str);
+%                 disable_premble(max(1,p-windows_size*length(premble_array)+1):p+length(codes)*windows_size-1) = 1;
+%                 positions_of_premble = [positions_of_premble, p];
+%                 
+%             disp(p);
+%             end
+%             plot([p,p],[0,0.2],'m','linewidth',2);
+%             pause(0.01);
         end
         
-        if (relative_values(p_index) < 0.6)
+        if (relative_values(p_index) < 0.3)
             break;
         end
     end
+    
+    disp(length(positions_of_premble));
+    
+    [positions_of_premble, ~] = sort(positions_of_premble);
+    disp(positions_of_premble');
 end
 
-function p=find_next_premble(data, fs, windows_size, f0, f1, premble_array, length_of_length_code, max_find_length)
-p = find_next_premble_by_relative(data, fs, windows_size, f0, f1, premble_array, length_of_length_code, max_find_length);
+
+function str=demodulator_after_premble_to_str(data, fs, windows_size, f0, f1, length_of_premble, length_of_length_code)
+codes = demodulator_after_preamble(datas, sampleRate, windows_size, f0, f1, length_of_premble, length_of_length_code);
+str=bin2string(codes(length_of_premble + length_of_length_code+1:end));
+end
+
+
+function [ str ] = bin2string( binary )
+%UNTITLED2 此处显示有关此函数的摘要
+%   把二进制串转化为字符串
+binary = binary(1:end-mod(length(binary),8));
+L = length(binary);
+str = [];
+binary = reshape(binary',[8,L/8]);
+binary = binary';
+for i=1:L/8
+    s= 0;
+    for j = 1:8
+        s = s+2^(8-j)*binary(i,j);
+    end
+    str = [str,char(s)];
+end
 end
 
 function codes=demodulator_after_preamble(datas, sampleRate, windows_size, f0, f1, length_of_premble, length_of_length_code)
@@ -91,6 +139,11 @@ for i=1:windows_size:length(datas)-windows_size+1
     end
 end
 end
+
+% function p=find_next_premble(data, fs, windows_size, f0, f1, premble_array, length_of_length_code, max_find_length)
+% p = find_next_premble_by_relative(data, fs, windows_size, f0, f1, premble_array, length_of_length_code, max_find_length);
+% end
+
 
 % %% 根据01码得到长度码、编码信息
 % if (length(code_after_preamble) > length_of_LengthCode + 8)
