@@ -1,8 +1,8 @@
 function data = modulator_FSK(codes, L_or_R)
 sampleRate = 48000;
-windows_size = 256;
-f0 = 10000;
-f1 = 12000;
+windows_size = 1200;
+f0 = 4000;
+f1 = 6000;
 
 t = 0:1/sampleRate:1;
 
@@ -19,6 +19,7 @@ for i=1:length(codes)
         f = f1;
         next_t_begin = t1;
     end
+    next_t_begin = 0;
     t = next_t_begin:1/sampleRate:next_t_begin+1/sampleRate*(windows_size+1);
     t = t(1:windows_size);
     data((i-1)*windows_size+1:i*windows_size) = sin(2*pi*f*t);
@@ -31,11 +32,15 @@ for i=1:length(codes)
     end
 end
 
+data = [zeros(1,1000),data,zeros(1,1000)];
+
 if L_or_R == 1
  data = [data', zeros(length(data),1)];
-else
+end
+if L_or_R == 2
  data = [zeros(length(data),1), data'];
 end
 
 sound(data, sampleRate);
+audiowrite('sound.wav',data,sampleRate);
 end

@@ -35,9 +35,9 @@ start_demodulator = 0;
 start_demodulator_stamp = 0;
 
 sampleRate = 48000;
-windows_size = 256;
-f0 = 10000;
-f1 = 12000;
+windows_size = 1024;
+f0 = 4000;
+f1 = 6000;
 sample_num_stamp = 0;
 send_id = 0;
 
@@ -45,19 +45,31 @@ send_id = 0;
 recObj = audiorecorder(sampleRate, 24, 2);
 
 disp('record start.');
-% record(recObj, 5);
-% pause(pause_time_s);
-% send_str(MODE, L_or_R);
-% pause(5.1 - pause_time_s);
-% recording_data = getaudiodata(recObj);
+record(recObj, 5);
+pause(pause_time_s);
+send_str(MODE, L_or_R);
+pause(5.1 - pause_time_s);
+recording_data = getaudiodata(recObj);
+audiowrite('Cget.wav',recording_data,sampleRate);
 
+% 
 [recording_data, fs] = audioread('Aget.wav');
+
+recording_data = recording_data(:,1); % 只取一个声道的麦克风声音。
+hd = design(fdesign.bandpass('N,F3dB1,F3dB2',6,5500,12500,fs),'butter');
+hd0 = design(fdesign.bandpass('N,F3dB1,F3dB2',6,5500,6500,fs),'butter');
+hd1 = design(fdesign.bandpass('N,F3dB1,F3dB2',6,3500,4500,fs),'butter');
+hold on;
+plot(filter(hd1,recording_data));
+plot(filter(hd0,recording_data));
+recording_data = filter(hd0,recording_data) + filter(hd1,recording_data);
+recording_data = filter(hd,recording_data);
+
+% calc_relativity();
+
 disp(fs);
-
-recording_data = recording_data(:,2); % 只取一个声道的麦克风声音。
 disp('record finished. start analysis.');
-
-plot(recording_data);
+% plot(recording_data);
 
 lastx = zeros(1,4096);
 
@@ -80,6 +92,13 @@ while (1)
 end
 end
 
+% function calc_relativity()
+% global recording_data
+% global relativity
+% relativity = conv2(recording_data, modulator_FSK([0,1,0,1,0,1,0,1],-1));
+% disp(max(relativity));
+% end
+
 function data=my_record()
 global recording_data
 global cur_recording_index
@@ -95,8 +114,14 @@ end
 
 function impulse = Get_y_impulse(f, y, fs)
 index_f = round(f/fs*size(y,2));
-impulse = max(y(1:end,index_f-3:index_f+3)')';
+impulse = max(y(1:end,index_f-10:index_f+10)')';
 end
+
+function impulse = Get_single_y_impulse(f, y, fs)
+index_f = round(f/fs*size(y,2));
+impulse = max(y(1:end,index_f-2:index_f+2));
+end
+
 
 % function impulse = Get_impulse(f, samples, fs)
 % index_f = round(f/fs*length(samples));
@@ -156,8 +181,8 @@ end
 
 %% 设置根据 impulse 判断 0/1 的规则，无法识别的置为 -1
 
-l = 2;
-ri = 20;
+l = 1.6;
+ri = 100;
 while ri - l > 0.005
     mid = (l + ri) / 2;
     codes0 = last_impulse_f0 - mid * last_impulse_f1;
@@ -172,7 +197,6 @@ while ri - l > 0.005
 
     if v == 8
         l = mid;
-        disp(l);
     else
         ri = mid;
     end
@@ -187,6 +211,7 @@ codes = reshape(codes, windows_size, [])';          % 分成各个 id 的 f0, f1
 find_preamble_flag = find_preamble(codes, windows_size, sampleRate, 1);
 
 if start_demodulator == 1
+    disp("the midsearch l = " + l);
 last_impulse_f0 = [];
 last_impulse_f1 = [];
 end
@@ -198,6 +223,7 @@ function find_preamble_flag = find_preamble(allcodes, windows_size, sampleRate, 
 global x
 global start_demodulator_stamp
 global sample_num_stamp
+global recording_data
 
 codes = allcodes;
 
@@ -263,7 +289,7 @@ global start_demodulator
 global length_of_LengthCode
 global sample_num_stamp
 global start_demodulator_stamp
-global x
+global recording_data
 
 length_of_LengthCode = 10;
 
@@ -273,14 +299,30 @@ if start_demodulator == 0
 end
 
 preamble = [preamble, datas];
-endi = 0;
+endi = 1-windows_size;
 
 %% 将录制到的样本解调成 01 码
 for i=1:windows_size:length(preamble)-windows_size+1
     x = preamble(i:i+windows_size-1);
+    b = start_demodulator_stamp + length(code_after_preamble)*windows_size;
+    e = b + windows_size - 1;
+    xr = recording_data(b:e)';
+    delta = b - start_demodulator_stamp;
+    
+    if max(abs(xr - x)) ~= 0
+        error("x and recording data not match.");
+    end
+    
+    x = recording_data(b:e)';
+    
     y = abs(fft(x')');
-    impulse_f0 = Get_y_impulse(f0, y, sampleRate);
-    impulse_f1 = Get_y_impulse(f1, y, sampleRate);
+    impulse_f0 = Get_single_y_impulse(f0, y, sampleRate);
+    impulse_f1 = Get_single_y_impulse(f1, y, sampleRate);
+    % disp(impulse_f0 + " vs " + impulse_f1);
+    
+
+    plot(b:e,x/2,'g');
+    
     if (impulse_f0 > impulse_f1)
         code_after_preamble = [code_after_preamble, 0];
     else
@@ -296,6 +338,16 @@ if (length(code_after_preamble) > length_of_LengthCode + 8)
     if (length(code_after_preamble) > length_to_recv + length_of_LengthCode + 8)
         code_after_preamble = code_after_preamble(1:length_to_recv + length_of_LengthCode + 8);
         disp("recv finished, length = " + length(code_after_preamble));
+        for i=-8:0
+            plot([start_demodulator_stamp+i*windows_size,start_demodulator_stamp+i*windows_size],[0,0.02],'m','linewidth',2);
+        end
+        for i=1:length(code_after_preamble)
+            b = start_demodulator_stamp + (i-1) * 1024;
+            e = start_demodulator_stamp + (i-0) * 1024;
+            if (code_after_preamble(i) == 1)
+            plot([b,b], [0, 0.02], 'm', 'linewidth', 2);
+            end
+        end
         recv_code(code_after_preamble(19:end), sample_num_stamp + length(x) - start_demodulator_stamp);
         clear_preamble();
     end
@@ -328,7 +380,8 @@ global start_demodulator_stamp
 global send_TOF_tag_stamp
 global sample_num_stamp
     str_recv = bin2string(code);
-    disp("str = "+ str_recv + ", start_demodulator_stamp = " + start_demodulator_stamp);
+    disp("start_demodulator_stamp = " + start_demodulator_stamp);
+    disp("str = "+ str_recv);
     if strcmp(mode, 'recv')
         disp("[RECV mode] num of samples_during_recv" + num_of_samples_during_recv);
         if strcmp(str_recv, 'ToF')
