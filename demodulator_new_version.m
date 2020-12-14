@@ -2,7 +2,7 @@ function [data_conved_0, data_conved_1] = demodulator_new_version(filename, fs, 
     [data, ~] = audioread(filename);
     
     data = data';
-    data = data(1,:);
+    data = data(2,:);
     
     plot(data);
     hold on;
@@ -60,12 +60,16 @@ function demodulator_data(data, fs, windows_size, f0, f1, premble_array, length_
     for p_index=1:length(positions)
         p = positions(p_index);
         if ~disable_premble(p)
+            %%%%
+            
             codes = demodulator_after_preamble(data(p:end), fs, windows_size, f0, f1, length(premble_array), length_of_length_code);
             disable_premble(max(1,p-windows_size*length(premble_array)+1):p+length(codes)*windows_size-1) = 1;
             positions_of_premble = [positions_of_premble, p];
             % disp(p);
             plot([p,p],[0,1],'m','linewidth',2);
-%            disp(bin2string(codes(length(premble_array) + length_of_length_code+1:end)));
+            
+            %%%% 
+           
 
 %             codes = demodulator_after_preamble(data(p:end), fs, windows_size, f0, f1, length(premble_array), length_of_length_code);
 %             str = bin2string(codes(length(premble_array) + length_of_length_code+1:end));
@@ -78,6 +82,8 @@ function demodulator_data(data, fs, windows_size, f0, f1, premble_array, length_
 %             end
 %             plot([p,p],[0,0.2],'m','linewidth',2);
 %             pause(0.01);
+
+            %%%%
         end
         
         if (relative_values(p_index) < 0.3)
