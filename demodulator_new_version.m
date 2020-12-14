@@ -1,8 +1,13 @@
-function [data_conved_0, data_conved_1] = demodulator_new_version(filename, fs, windows_size, f0, f1, premble_array, length_of_length_code)
+function [positions_of_premble] = demodulator_new_version(filename, fs, windows_size, f0, f1, premble_array, length_of_length_code, i_channel)
     [data, ~] = audioread(filename);
     
     data = data';
-    data = data(2,:);
+    
+    if ~isempty(i_channel) && i_channel == 2
+        data = data(2,:);
+    else
+        data = data(1,:);
+    end
     
     plot(data);
     hold on;
@@ -15,10 +20,10 @@ function [data_conved_0, data_conved_1] = demodulator_new_version(filename, fs, 
 %     hd1 = design(fdesign.bandpass('N,F3dB1,F3dB2',6,f1-100,f1+100,fs),'butter');
 %     data = filter(hd0,data)+filter(hd1,data);
 %     plot(data);
-    demodulator_data(data, fs, windows_size, f0, f1, premble_array, length_of_length_code);
+    positions_of_premble=demodulator_data(data, fs, windows_size, f0, f1, premble_array, length_of_length_code);
 end
 
-function demodulator_data(data, fs, windows_size, f0, f1, premble_array, length_of_length_code)
+function positions_of_premble=demodulator_data(data, fs, windows_size, f0, f1, premble_array, length_of_length_code)
     data_conved_0 = conv(data, flip(modulator_FSK_new_version([0], fs, windows_size, f0, f1)), 'valid');
     data_conved_1 = conv(data, flip(modulator_FSK_new_version([1], fs, windows_size, f0, f1)), 'valid');
     data_conved_self_pre = data .* data;
