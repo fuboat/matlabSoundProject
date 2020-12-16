@@ -1,4 +1,4 @@
-function [positions_of_premble] = demodulator_new_version(filename, fs, windows_size, f0, f1, premble_array, length_of_length_code, i_channel)
+function [positions_of_premble,strs] = demodulator_new_version(filename, fs, windows_size, f0, f1, premble_array, length_of_length_code, i_channel)
     [data, ~] = audioread(filename);
     
     data = data';
@@ -8,22 +8,23 @@ function [positions_of_premble] = demodulator_new_version(filename, fs, windows_
     else
         data = data(1,:);
     end
+
+    
+    hd0 = design(fdesign.bandpass('N,F3dB1,F3dB2',6,min(f0,f1)-100,max(f0,f1)+100,fs),'butter');
+    hd1 = design(fdesign.bandpass('N,F3dB1,F3dB2',6,f1-100,f1+100,fs),'butter');
+    data = filter(hd0,data);
     
     plot(data);
     hold on;
-    
-%     hd0 = design(fdesign.bandpass('N,F3dB1,F3dB2',6,min(f0,f1)-100,max(f0,f1)+100,fs),'butter');
-%     hd1 = design(fdesign.bandpass('N,F3dB1,F3dB2',6,f1-100,f1+100,fs),'butter');
-%     data = filter(hd0,data);
     
 %     hd0 = design(fdesign.bandpass('N,F3dB1,F3dB2',6,f0-100,f0+100,fs),'butter');
 %     hd1 = design(fdesign.bandpass('N,F3dB1,F3dB2',6,f1-100,f1+100,fs),'butter');
 %     data = filter(hd0,data)+filter(hd1,data);
 %     plot(data);
-    positions_of_premble=demodulator_data(data, fs, windows_size, f0, f1, premble_array, length_of_length_code);
+    [positions_of_premble,strs]=demodulator_data(data, fs, windows_size, f0, f1, premble_array, length_of_length_code);
 end
 
-function positions_of_premble=demodulator_data(data, fs, windows_size, f0, f1, premble_array, length_of_length_code)
+function [positions_of_premble,strs]=demodulator_data(data, fs, windows_size, f0, f1, premble_array, length_of_length_code)
     data_conved_0 = conv(data, flip(modulator_FSK_new_version([0], fs, windows_size, f0, f1)), 'valid');
     data_conved_1 = conv(data, flip(modulator_FSK_new_version([1], fs, windows_size, f0, f1)), 'valid');
     data_conved_self_pre = data .* data;
@@ -61,15 +62,19 @@ function positions_of_premble=demodulator_data(data, fs, windows_size, f0, f1, p
     disable_premble = zeros(1,length(data));
         
     positions_of_premble = [];
+    strs = {};
     
     for p_index=1:length(positions)
         p = positions(p_index);
+        disp(relative_values(p_index));
         if ~disable_premble(p)
             %%%%
             
             codes = demodulator_after_preamble(data(p:end), fs, windows_size, f0, f1, length(premble_array), length_of_length_code);
-            disable_premble(max(1,p-windows_size*length(premble_array)+1):p+length(codes)*windows_size-1) = 1;
+            STR = demodulator_after_premble_to_str(data(p:end), fs, windows_size, f0, f1, length(premble_array), length_of_length_code);
+            % disable_premble(max(1,p-windows_size*length(premble_array)+1):p+length(codes)*windows_size-1) = 1;
             positions_of_premble = [positions_of_premble, p];
+            strs{end+1} = STR;
             % disp(p);
             plot([p,p],[0,1],'m','linewidth',2);
             
@@ -91,7 +96,7 @@ function positions_of_premble=demodulator_data(data, fs, windows_size, f0, f1, p
             %%%%
         end
         
-        if (relative_values(p_index) < 0.3)
+        if (relative_values(p_index) < 0.5)
             break;
         end
     end
@@ -104,8 +109,8 @@ end
 
 
 function str=demodulator_after_premble_to_str(data, fs, windows_size, f0, f1, length_of_premble, length_of_length_code)
-codes = demodulator_after_preamble(datas, sampleRate, windows_size, f0, f1, length_of_premble, length_of_length_code);
-str=bin2string(codes(length_of_premble + length_of_length_code+1:end));
+codes = demodulator_after_preamble(data, fs, windows_size, f0, f1, length_of_premble, length_of_length_code);
+str=bin2string(codes(length_of_premble+length_of_length_code+1:end));
 end
 
 
