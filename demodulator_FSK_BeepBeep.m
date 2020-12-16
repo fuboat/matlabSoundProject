@@ -251,7 +251,7 @@ if start_demodulator == 0
 end
 
 preamble = [preamble, datas];
-endi = 0;
+endi = 1-windows_size;
 
 %% 将录制到的样本解调成 01 码
 for i=1:windows_size:length(preamble)-windows_size+1
