@@ -32,8 +32,8 @@ start_demodulator_stamp = 0;
 
 sampleRate = 48000;
 windows_size = 256;
-f0 = 16000;
-f1 = 12000;
+f0 = 4000;
+f1 = 6000;
 sample_num_stamp = 0;
 send_id = 0;
 
@@ -47,11 +47,11 @@ while (1)
         string_send_back = '';
     end
     
-    if (strcmp(mode, 'send') || strcmp(mode, 'recv')) && numOverrun == 0 && mod(sample_num_stamp, 409600) < 1024
-        send_id = send_id + 1;
-        send_TOF_tag_stamp = sample_num_stamp;
-        send_str([MODE, num2str(send_id)]);
-    end
+%     if (strcmp(mode, 'send') || strcmp(mode, 'recv')) && numOverrun == 0 && mod(sample_num_stamp, 409600) < 1024
+%         send_id = send_id + 1;
+%         send_TOF_tag_stamp = sample_num_stamp;
+%         send_str([MODE, num2str(send_id)]);
+%     end
     
     lengthx = length(x);
     
