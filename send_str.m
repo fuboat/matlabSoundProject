@@ -1,9 +1,9 @@
-function [allcode] = send_str(str, L_or_R)
+function [allcode] = send_str(str, f0, f1, L_or_R)
 code = string2bin(str)';
 lengthCode = int2bin(length(code), 10);
 preamble = [0,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1];
 allcode = [preamble, lengthCode, code];
-modulator_FSK(allcode, L_or_R);
+modulator_FSK(allcode, f0, f1, L_or_R);
 end
 
 function [binary] = int2bin(x, len)

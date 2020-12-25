@@ -1,0 +1,8 @@
+function run_part(csvfilename, wavfilename)
+fs = csvread(csvfilename,0,1,[0,1,0,1]);
+symbol_duration = csvread(csvfilename,1,1,[1,1,1,1]);
+windows_size = fs * symbol_duration;
+f0 = csvread(csvfilename,2,1,[2,1,2,1]);
+f1 = csvread(csvfilename,3,1,[3,1,3,1]);
+demodulator_new_version(wavfilename,fs,windows_size,f0,f1,
+end
