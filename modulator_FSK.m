@@ -1,8 +1,6 @@
-function data = modulator_FSK(codes, L_or_R)
+function data = modulator_FSK(codes, f0, f1, L_or_R)
 sampleRate = 48000;
-windows_size = 512;
-f0 = 4000;
-f1 = 6000;
+windows_size = 1024;
 
 t = 0:1/sampleRate:1;
 
@@ -40,6 +38,7 @@ if L_or_R == 2
  data = [zeros(length(data),1), data'];
 end
 
-sound(data, sampleRate);
+player = audioplayer(data, sampleRate);
+playblocking(player);
 audiowrite('sound.wav',data,sampleRate);
 end
