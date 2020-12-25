@@ -1,6 +1,6 @@
 function data = modulator_FSK(codes, L_or_R)
 sampleRate = 48000;
-windows_size = 1024;
+windows_size = 512;
 f0 = 4000;
 f1 = 6000;
 
@@ -19,7 +19,6 @@ for i=1:length(codes)
         f = f1;
         next_t_begin = t1;
     end
-    next_t_begin = 0;
     t = next_t_begin:1/sampleRate:next_t_begin+1/sampleRate*(windows_size+1);
     t = t(1:windows_size);
     data((i-1)*windows_size+1:i*windows_size) = sin(2*pi*f*t);

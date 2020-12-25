@@ -72,7 +72,7 @@ function [positions_of_premble,strs]=demodulator_data(data, fs, windows_size, f0
             
             codes = demodulator_after_preamble(data(p:end), fs, windows_size, f0, f1, length(premble_array), length_of_length_code);
             STR = demodulator_after_premble_to_str(data(p:end), fs, windows_size, f0, f1, length(premble_array), length_of_length_code);
-            % disable_premble(max(1,p-windows_size*length(premble_array)+1):p+length(codes)*windows_size-1) = 1;
+            disable_premble(max(1,p-windows_size*length(premble_array)+1):p+length(codes)*windows_size-1) = 1;
             positions_of_premble = [positions_of_premble, p];
             strs{end+1} = STR;
             % disp(p);
