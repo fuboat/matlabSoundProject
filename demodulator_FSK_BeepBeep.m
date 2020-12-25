@@ -31,7 +31,7 @@ start_demodulator = 0;
 start_demodulator_stamp = 0;
 
 sampleRate = 48000;
-windows_size = 256;
+windows_size = 512;
 f0 = 4000;
 f1 = 6000;
 sample_num_stamp = 0;

@@ -1,4 +1,4 @@
-function [positions_of_premble,strs, codess] = demodulator_new_version(filename, fs, windows_size, f0, f1, premble_array, length_of_length_code, i_channel)
+function [positions_of_premble,strs, codess] = demodulator_new_version_for_recv(filename, fs, windows_size, f0, f1, premble_array, length_of_length_code, i_channel)
     [data, ~] = audioread(filename);
     
     data = data';
@@ -71,27 +71,20 @@ function [positions_of_premble,strs,codess]=demodulator_data(data, fs, windows_s
         if (relative_values(p_index) < 0.5)
             break;
         end
-        p = positions(p_index);
+
         
+        p = positions(p_index);
         if ~disable_premble(p)
             %%%%
-            
-%             codes = demodulator_after_preamble(data(p:end), fs, windows_size, f0, f1, length(premble_array), length_of_length_code);
-%             STR = demodulator_after_premble_to_str(data(p:end), fs, windows_size, f0, f1, length(premble_array), length_of_length_code);
-%             % disable_premble(max(1,p-windows_size*length(premble_array)+1):p+length(codes)*windows_size-1) = 1;
-%             positions_of_premble = [positions_of_premble, p];
-%             strs{end+1} = STR;
-%             % disp(p);
-%             plot([p,p],[0,1],'m','linewidth',2);
-            
-            %%%% 
-           
-
-            codes = demodulator_after_preamble(data(p:end), fs, windows_size, f0, f1, length(premble_array), length_of_length_code);
-            disable_premble(max(1,p-windows_size*length(premble_array)+1):p+length(codes)*windows_size-1) = 1;
-            positions_of_premble = [positions_of_premble, p];
-%             plot([p,p],[0,0.2],'m','linewidth',2);
-%             pause(0.01);
+            STR = demodulator_after_premble_to_str(data(p:end), fs, windows_size, f0, f1, length(premble_array), length_of_length_code);
+            % disp(STR);
+            if length(STR) >= 5 && strcmp(STR(1:5),'[str]') && strcmp(STR(length(STR)-5+1:end), '[str]')
+                codes = demodulator_after_preamble(data(p:end), fs, windows_size, f0, f1, length(premble_array), length_of_length_code);
+                disable_premble(max(1,p-windows_size*length(premble_array)+1):p+length(codes)*windows_size-1) = 1;
+                positions_of_premble = [positions_of_premble, p];
+            end
+%           plot([p,p],[0,0.2],'m','linewidth',2);
+%           pause(0.01);
 
             %%%%
         end
@@ -176,6 +169,12 @@ impulse = max(y(1:end,index_f-10:index_f+10)')';
 end
 
 function impulse = Get_single_y_impulse(f, y, fs)
+if size(y,2)<=10
+    impulse = 0;
+    return ;
+end
 index_f = round(f/fs*size(y,2));
-impulse = max(y(1:end,index_f-2:index_f+2));
+if index_f-2 >= 1 && index_f+2 <= size(y,2)
+    impulse = max(y(1:end,index_f-2:index_f+2));
+end
 end
